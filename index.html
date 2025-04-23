@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Weather App</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url("./pink-cloudy-sky-mobile-phone-wallpaper_53876-144968.avif");
+      text-align: center;
+      padding: 2rem;
+      background-size: 100%;
+    }
+
+    .container {
+      background-color: transparent;
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      border: 2px solid white;
+      height: 30rem;
+    }
+
+    input, button {
+      width: 60%;
+      height: 2rem;
+      border-radius: 20px;
+      padding: 0.5rem;
+      margin: 0.5rem;
+      font-size: 1rem;
+      text-align: center;
+      border: 2px solid black;
+    }
+
+    .weather, .forecast {
+      margin-top: 1rem;
+      background-color: transparent;
+      border: 2px solid black;
+      border-radius: 20px;
+      height: 8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌦 Weather Report</h2>
+    <input type="text" id="city" placeholder="Enter city name">
+    <button onclick="getWeather()">Get Weather</button>
+
+    <div class="weather" id="weather"></div>
+    <div class="forecast" id="forecast"></div>
+  </div>
+
+  <script>
+    const API_KEY = '5fe43102c614a308ea61ce5a03fd13e8';
+
+    async function getWeather() {
+      const city = document.getElementById("city").value;
+      const weatherDiv = document.getElementById("weather");
+      const forecastDiv = document.getElementById("forecast");
+      weatherDiv.innerHTML = '';
+      forecastDiv.innerHTML = '';
+
+      try {
+        // Current Weather
+        const weatherRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=imperial&appid=${API_KEY}`);
+        if (!weatherRes.ok) {
+          weatherDiv.innerHTML = "❌ City not found.";
+          return;
+        }
+        const data = await weatherRes.json();
+        const tempF = data.main.temp;
+        const tempC = (tempF - 32) * 5 / 9;
+        const tempK = tempC + 273.15;
+        const desc = data.weather[0].description;
+
+        weatherDiv.innerHTML = `
+          <h3>${city.toUpperCase()}</h3>
+          <p>${desc.charAt(0).toUpperCase() + desc.slice(1)}</p>
+          <p>🌡️ ${Math.round(tempF)}°F | ${Math.round(tempC)}°C | ${Math.round(tempK)}K</p>
+        `;
+
+        // Forecast
+        const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=imperial&appid=${API_KEY}`);
+        const forecastData = await forecastRes.json();
+        let printedDates = new Set();
+
+        forecastDiv.innerHTML = "<h4>🔮 3-Day Forecast (12PM):</h4>";
+        for (let entry of forecastData.list) {
+          if (entry.dt_txt.includes("12:00:00")) {
+            const date = entry.dt_txt.split(" ")[0];
+            if (!printedDates.has(date)) {
+              const forecastDesc = entry.weather[0].description;
+              const fTemp = entry.main.temp;
+              const cTemp = (fTemp - 32) * 5 / 9;
+              forecastDiv.innerHTML += `
+                <p>📅 ${date} - ${forecastDesc.charAt(0).toUpperCase() + forecastDesc.slice(1)}, ${Math.round(fTemp)}°F / ${Math.round(cTemp)}°C</p>
+              `;
+              printedDates.add(date);
+            }
+            if (printedDates.size === 3) break;
+          }
+        }
+
+      } catch (error) {
+        weatherDiv.innerHTML = "⚠️ Error fetching weather.";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
